@@ -1,8 +1,9 @@
 FROM --platform=${BUILDPLATFORM} golang:1.23-bookworm AS builder
 
 ARG TARGETARCH
-ENV GOARCH "${TARGETARCH}"
-ENV GOOS linux
+ENV CGO_ENABLED=0
+ENV GOARCH="${TARGETARCH}"
+ENV GOOS=linux
 
 WORKDIR /build
 
