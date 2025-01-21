@@ -34,7 +34,7 @@ require (
 	github.com/gaissmai/bart v0.11.1 // indirect
 	github.com/go-json-experiment/json v0.0.0-20250119165339-d96285104214 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/godbus/dbus/v5 v5.1.1-0.20230522191255-76236955d466 // indirect
+	github.com/godbus/dbus/v5 v5.1.1-0.20241109141217-c266b19b28e9 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
