@@ -42,7 +42,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/nftables v0.2.1-0.20240414091927-5e242ec57806 // indirect
+	github.com/google/nftables v0.2.1-0.20250116081533-1c789726cfeb // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/csrf v1.7.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kortschak/wol v0.0.0-20200729010619-da482cc4850a // indirect
 	github.com/mdlayher/genetlink v1.3.2 // indirect
-	github.com/mdlayher/netlink v1.7.2 // indirect
+	github.com/mdlayher/netlink v1.7.3-0.20250113171957-fbb4dce95f42 // indirect
 	github.com/mdlayher/sdnotify v1.0.0 // indirect
 	github.com/mdlayher/socket v0.5.0 // indirect
 	github.com/miekg/dns v1.1.58 // indirect
