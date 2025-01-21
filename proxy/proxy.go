@@ -3,7 +3,7 @@ package proxy
 import (
 	"context"
 	"fmt"
-	"net"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
+	"golang.org/x/sync/errgroup"
 	"tailscale.com/tsnet"
 )
 
@@ -18,6 +19,8 @@ const (
 	HeaderTailscaleUserAvatar = "Tailscale-User-Avatar"
 	HeaderTailscaleUserLogin  = "Tailscale-User-Login"
 	HeaderTailscaleUserName   = "Tailscale-User-Name"
+
+	serverShutdownGracePeriod = 30 * time.Second
 )
 
 type userProfile struct {
@@ -64,9 +67,23 @@ func newCache(maxTokens int64) (*cache, error) {
 	return &cache{client: client}, nil
 }
 
+func redirectToHttps() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		url := *r.URL
+		url.Scheme = "https"
+		url.Host = r.Host
+		http.Redirect(w, r, url.String(), http.StatusPermanentRedirect)
+	})
+}
+
+func gracefulShutdown(ctx context.Context, svr *http.Server) error {
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownGracePeriod)
+	defer cancel()
+	return svr.Shutdown(ctx)
+}
+
 type Proxy struct {
-	BindAddr    string
-	BindPort    int
 	CacheExpiry time.Duration
 	CacheSize   int64
 	ControlURL  string
@@ -153,11 +170,63 @@ func (p *Proxy) Run() error {
 
 		// Proxy to upstream
 		proxy.ServeHTTP(w, r)
+
+		// Output access log
+		log.Printf("%s - %s [%s] \"%s %s %s\" - \"%s\"\n",
+			r.RemoteAddr,
+			profile.Login,
+			time.Now().Format("02/Jan/2006:15:04:05 -0700"),
+			r.Method,
+			r.URL,
+			r.Proto,
+			r.UserAgent(),
+		)
 	})
 
-	addr := net.JoinHostPort(p.BindAddr, fmt.Sprintf("%d", p.BindPort))
+	g, ctx := errgroup.WithContext(context.Background())
+	var httpHandler http.Handler = mux
+
+	// Start the HTTPS server if TLS cert and key are provided
 	if p.TLSCertFile != "" && p.TLSKeyFile != "" {
-		return http.ListenAndServeTLS(addr, p.TLSCertFile, p.TLSKeyFile, mux)
+		// When TLS cert and key are provided, simply redirect HTTP to HTTPS
+		httpHandler = redirectToHttps()
+		ln, err := ts.Listen("tcp", ":443")
+		if err != nil {
+			return fmt.Errorf("failed to listen on port 443: %v", err)
+		}
+		svr := &http.Server{Handler: mux}
+		g.Go(func() error {
+			if err := svr.ServeTLS(ln, p.TLSCertFile, p.TLSKeyFile); err != nil {
+				return fmt.Errorf("failed to serve TLS: %v", err)
+			}
+			return nil
+		})
+		g.Go(func() error {
+			if err := gracefulShutdown(ctx, svr); err != nil {
+				return fmt.Errorf("failed to shutdown HTTPS server: %v", err)
+			}
+			return nil
+		})
 	}
-	return http.ListenAndServe(addr, mux)
+
+	// Start the HTTP server
+	ln, err := ts.Listen("tcp", ":80")
+	if err != nil {
+		return fmt.Errorf("failed to listen on port 80: %v", err)
+	}
+	svr := http.Server{Handler: httpHandler}
+	g.Go(func() error {
+		if err := http.Serve(ln, httpHandler); err != nil {
+			return fmt.Errorf("failed to serve HTTP: %v", err)
+		}
+		return nil
+	})
+	g.Go(func() error {
+		if err := gracefulShutdown(ctx, &svr); err != nil {
+			return fmt.Errorf("failed to shutdown HTTP server: %v", err)
+		}
+		return nil
+	})
+
+	return g.Wait()
 }
