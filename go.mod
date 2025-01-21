@@ -5,6 +5,7 @@ go 1.23.5
 require (
 	github.com/dgraph-io/ristretto v0.2.0
 	github.com/spf13/cobra v1.8.1
+	golang.org/x/sync v0.10.0
 	tailscale.com v1.78.3
 )
 
@@ -84,7 +85,6 @@ require (
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
