@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/bxnlabs/ts-auth-proxy/proxy"
 	"github.com/spf13/cobra"
@@ -32,6 +33,8 @@ func main() {
 	}
 	rootCmd.Flags().StringVarP(&p.BindAddr, "bind-addr", "a", "127.0.0.1", "Address to bind the proxy to")
 	rootCmd.Flags().IntVarP(&p.BindPort, "port", "p", 9000, "Port to listen on")
+	rootCmd.Flags().Int64VarP(&p.CacheSize, "cache-size", "s", 1000, "Maximum number of entries in the cache")
+	rootCmd.Flags().DurationVarP(&p.CacheExpiry, "cache-expiry", "e", 10*time.Minute, "Time after which cache entries expire")
 	rootCmd.Flags().StringVarP(&p.ControlURL, "control-url", "c", ipn.DefaultControlURL, "URL for Tailscale control server")
 	rootCmd.Flags().StringVarP(&p.Hostname, "hostname", "H", "auth-server", "Hostname for proxy on Tailnet")
 	rootCmd.Flags().StringVarP(&p.StateDir, "state-dir", "d", "/var/run/ts-auth-proxy", "Directory to store state in")
