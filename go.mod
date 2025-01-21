@@ -1,4 +1,4 @@
-module github.com/bxnlabs/ts-auth-server
+module github.com/bxnlabs/ts-auth-proxy
 
 go 1.23.5
 

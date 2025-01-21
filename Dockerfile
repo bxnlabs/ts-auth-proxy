@@ -12,10 +12,10 @@ RUN go mod download
 COPY cmd ./cmd
 COPY pkg ./pkg
 COPY main.go ./
-RUN go build -ldflags="-w -s" -o dist/ts-auth-server main.go
+RUN go build -ldflags="-w -s" -o dist/ts-auth-proxy main.go
 
 
 FROM scratch
 
-COPY --from=builder /build/dist/ts-auth-server /ts-auth-server
-ENTRYPOINT [ "/ts-auth-server" ]
+COPY --from=builder /build/dist/ts-auth-proxy /ts-auth-proxy
+ENTRYPOINT [ "/ts-auth-proxy" ]
