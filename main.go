@@ -31,8 +31,6 @@ func main() {
 			}
 		},
 	}
-	rootCmd.Flags().StringVarP(&p.BindAddr, "bind-addr", "a", "127.0.0.1", "Address to bind the proxy to")
-	rootCmd.Flags().IntVarP(&p.BindPort, "port", "p", 9000, "Port to listen on")
 	rootCmd.Flags().Int64VarP(&p.CacheSize, "cache-size", "s", 1000, "Maximum number of entries in the cache")
 	rootCmd.Flags().DurationVarP(&p.CacheExpiry, "cache-expiry", "e", 10*time.Minute, "Time after which cache entries expire")
 	rootCmd.Flags().StringVarP(&p.ControlURL, "control-url", "c", ipn.DefaultControlURL, "URL for Tailscale control server")
