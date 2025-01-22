@@ -74,7 +74,7 @@ require (
 	github.com/tailscale/netlink v1.1.1-0.20240822203006-4d49adab4de7 // indirect
 	github.com/tailscale/peercred v0.0.0-20250107143737-35a0c7bd7edc // indirect
 	github.com/tailscale/web-client-prebuilt v0.0.0-20240226180453-5db17b287bf1 // indirect
-	github.com/tailscale/wireguard-go v0.0.0-20241113014420-4e883d38c8d3 // indirect
+	github.com/tailscale/wireguard-go v0.0.0-20250107165329-0b8b35511f19 // indirect
 	github.com/tcnksm/go-httpstat v0.2.0 // indirect
 	github.com/u-root/uio v0.0.0-20240118234441-a3c409a6018e // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
