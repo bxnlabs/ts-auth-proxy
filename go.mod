@@ -72,7 +72,7 @@ require (
 	github.com/tailscale/goupnp v1.0.1-0.20210804030727-66b27ba4e403 // indirect
 	github.com/tailscale/hujson v0.0.0-20241010212012-29efb4a0184b // indirect
 	github.com/tailscale/netlink v1.1.1-0.20240822203006-4d49adab4de7 // indirect
-	github.com/tailscale/peercred v0.0.0-20240214030740-b535050b2aa4 // indirect
+	github.com/tailscale/peercred v0.0.0-20250107143737-35a0c7bd7edc // indirect
 	github.com/tailscale/web-client-prebuilt v0.0.0-20240226180453-5db17b287bf1 // indirect
 	github.com/tailscale/wireguard-go v0.0.0-20241113014420-4e883d38c8d3 // indirect
 	github.com/tcnksm/go-httpstat v0.2.0 // indirect
@@ -85,7 +85,7 @@ require (
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.29.1-0.20250107080300-1c14dcadc3ab // indirect
 	golang.org/x/term v0.27.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
