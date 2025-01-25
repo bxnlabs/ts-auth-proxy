@@ -94,6 +94,16 @@ type Proxy struct {
 	Upstream    *url.URL
 }
 
+type wrappedResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *wrappedResponseWriter) WriteHeader(code int) {
+	w.statusCode = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
 func (p *Proxy) Run() error {
 	// Create the state directory if it doesn't exist
 	if err := os.MkdirAll(p.StateDir, 0755); err != nil {
@@ -136,6 +146,30 @@ func (p *Proxy) Run() error {
 		var profile *userProfile
 		var err error
 
+		// Create the wrapper response writer
+		ww := &wrappedResponseWriter{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
+
+		// Output access log with status code
+		defer func() {
+			login := "unknown"
+			if profile != nil {
+				login = profile.Login
+			}
+			log.Printf("%s - %s [%s] \"%s %s %s\" %d \"%s\"\n",
+				r.RemoteAddr,
+				login,
+				time.Now().Format("02/Jan/2006:15:04:05 -0700"),
+				r.Method,
+				r.URL,
+				r.Proto,
+				ww.statusCode,
+				r.UserAgent(),
+			)
+		}()
+
 		// Get user profile from cache if available
 		profile, err = cache.get(r.Context(), r.RemoteAddr)
 		// Fallback to tailscale if cache miss
@@ -143,13 +177,13 @@ func (p *Proxy) Run() error {
 			// Fetch user info from tailscale
 			info, err := tsCli.WhoIs(r.Context(), r.RemoteAddr)
 			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized)
+				ww.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			// Tagged nodes don't identify a user.
 			if info.Node.IsTagged() {
-				w.WriteHeader(http.StatusForbidden)
+				ww.WriteHeader(http.StatusForbidden)
 				return
 			}
 
@@ -168,19 +202,8 @@ func (p *Proxy) Run() error {
 		h.Set(HeaderTailscaleUserLogin, profile.Login)
 		h.Set(HeaderTailscaleUserName, profile.Name)
 
-		// Proxy to upstream
-		proxy.ServeHTTP(w, r)
-
-		// Output access log
-		log.Printf("%s - %s [%s] \"%s %s %s\" - \"%s\"\n",
-			r.RemoteAddr,
-			profile.Login,
-			time.Now().Format("02/Jan/2006:15:04:05 -0700"),
-			r.Method,
-			r.URL,
-			r.Proto,
-			r.UserAgent(),
-		)
+		// Proxy to upstream using wrapped writer
+		proxy.ServeHTTP(ww, r)
 	})
 
 	g, ctx := errgroup.WithContext(context.Background())
