@@ -4,6 +4,7 @@ go 1.23.5
 
 require (
 	github.com/dgraph-io/ristretto v0.2.0
+	github.com/dgraph-io/ristretto/v2 v2.1.0
 	github.com/spf13/cobra v1.8.1
 	golang.org/x/sync v0.10.0
 	tailscale.com v1.78.3
