@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 	"golang.org/x/sync/errgroup"
 	"tailscale.com/tsnet"
 )
@@ -30,17 +30,13 @@ type userProfile struct {
 }
 
 type cache struct {
-	client *ristretto.Cache
+	client *ristretto.Cache[string, *userProfile]
 }
 
 func (c *cache) get(_ context.Context, addr string) (*userProfile, error) {
-	data, ok := c.client.Get(addr)
+	profile, ok := c.client.Get(addr)
 	if !ok {
 		return nil, fmt.Errorf("addr not found: %s", addr)
-	}
-	profile, ok := data.(*userProfile)
-	if !ok {
-		return nil, fmt.Errorf("unexpected data type: %T", data)
 	}
 	return profile, nil
 }
@@ -51,7 +47,7 @@ func (c *cache) set(_ context.Context, addr string, profile *userProfile, expiry
 }
 
 func newCache(maxTokens int64) (*cache, error) {
-	client, err := ristretto.NewCache(&ristretto.Config{
+	client, err := ristretto.NewCache(&ristretto.Config[string, *userProfile]{
 		// Authors recommend setting NumCounters to 10x the number of items
 		// we expect to keep in the cache when full
 		// See: https://github.com/dgraph-io/ristretto/blob/65472b1ba6fd5d37f34b3d6f807b47fe3b1f4b6d/cache.go#L97
