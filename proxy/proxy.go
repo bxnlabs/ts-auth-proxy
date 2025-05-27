@@ -145,6 +145,10 @@ func (p *Proxy) Run() error {
 
 	// Create reverse proxy to upstream
 	proxy := httputil.NewSingleHostReverseProxy(p.Upstream)
+	proxy.Transport = &http.Transport{
+		MaxIdleConns:        1000,
+		MaxIdleConnsPerHost: 1000,
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -175,8 +179,16 @@ func (p *Proxy) Run() error {
 			)
 		}()
 
+		// RemoteAddr is in the form "ip:port"
+		// Drop the random port and just use the IP address for identification
+		ipv4, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			ww.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
 		// Get user profile from cache if available
-		profile, err = cache.get(r.Context(), r.RemoteAddr)
+		profile, err = cache.get(r.Context(), ipv4)
 		// Fallback to tailscale if cache miss
 		if err != nil {
 			// Fetch user info from tailscale
@@ -198,7 +210,7 @@ func (p *Proxy) Run() error {
 				Login:  info.UserProfile.LoginName,
 				Name:   info.UserProfile.DisplayName,
 			}
-			_ = cache.set(r.Context(), r.RemoteAddr, profile, p.CacheExpiry)
+			_ = cache.set(r.Context(), ipv4, profile, p.CacheExpiry)
 		}
 
 		// Set headers
