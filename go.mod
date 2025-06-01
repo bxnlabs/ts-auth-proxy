@@ -6,7 +6,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.2.0
 	github.com/spf13/cobra v1.9.1
 	golang.org/x/sync v0.14.0
-	tailscale.com v1.80.3
+	tailscale.com v1.84.1
 )
 
 require (
