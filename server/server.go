@@ -1,13 +1,11 @@
-package proxy
+package server
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
+	"net/netip"
 	"net/url"
 	"os"
 	"time"
@@ -18,6 +16,8 @@ import (
 )
 
 const (
+	HeaderTailscaleRemoteAddr = "Tailscale-Remote-Addr"
+	HeaderTailscaleRemotePort = "Tailscale-Remote-Port"
 	HeaderTailscaleUserAvatar = "Tailscale-User-Avatar"
 	HeaderTailscaleUserLogin  = "Tailscale-User-Login"
 	HeaderTailscaleUserName   = "Tailscale-User-Name"
@@ -65,15 +65,6 @@ func newCache(maxTokens int64) (*cache, error) {
 	return &cache{client: client}, nil
 }
 
-func redirectToHttps() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		url := *r.URL
-		url.Scheme = "https"
-		url.Host = r.Host
-		http.Redirect(w, r, url.String(), http.StatusPermanentRedirect)
-	})
-}
-
 func gracefulShutdown(ctx context.Context, svr *http.Server) error {
 	<-ctx.Done()
 	ctx, cancel := context.WithTimeout(context.Background(), serverShutdownGracePeriod)
@@ -81,35 +72,16 @@ func gracefulShutdown(ctx context.Context, svr *http.Server) error {
 	return svr.Shutdown(ctx)
 }
 
-type Proxy struct {
+type Server struct {
 	CacheExpiry time.Duration
 	CacheSize   int64
 	ControlURL  string
 	Hostname    string
 	StateDir    string
-	TLSCertFile string
-	TLSKeyFile  string
 	Upstream    *url.URL
 }
 
-type wrappedResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (w *wrappedResponseWriter) WriteHeader(code int) {
-	w.statusCode = code
-	w.ResponseWriter.WriteHeader(code)
-}
-
-func (w *wrappedResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	if hijacker, ok := w.ResponseWriter.(http.Hijacker); ok {
-		return hijacker.Hijack()
-	}
-	return nil, nil, fmt.Errorf("upstream ResponseWriter does not implement http.Hijacker")
-}
-
-func (p *Proxy) Run() error {
+func (p *Server) Run() error {
 	// Create the state directory if it doesn't exist
 	if err := os.MkdirAll(p.StateDir, 0755); err != nil {
 		return fmt.Errorf("failed to create state directory: %v", err)
@@ -129,7 +101,9 @@ func (p *Proxy) Run() error {
 		Dir:        p.StateDir,
 		ControlURL: p.ControlURL,
 	}
-	defer ts.Close()
+	defer func() {
+		_ = ts.Close()
+	}()
 
 	// Create ts local client to fetch user info
 	tsCli, err := ts.LocalClient()
@@ -143,64 +117,38 @@ func (p *Proxy) Run() error {
 		return fmt.Errorf("failed to create cache: %v", err)
 	}
 
-	// Create reverse proxy to upstream
-	proxy := httputil.NewSingleHostReverseProxy(p.Upstream)
-	proxy.Transport = &http.Transport{
-		MaxIdleConns:        1000,
-		MaxIdleConnsPerHost: 1000,
-	}
-
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		var profile *userProfile
 		var err error
 
-		// Create the wrapper response writer
-		ww := &wrappedResponseWriter{
-			ResponseWriter: w,
-			statusCode:     http.StatusOK,
+		// Parse remote address from headers
+		remoteHost := r.Header.Get(HeaderTailscaleRemoteAddr)
+		remotePort := r.Header.Get(HeaderTailscaleRemotePort)
+		if remoteHost == "" || remotePort == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
-
-		// Output access log with status code
-		defer func() {
-			login := "unknown"
-			if profile != nil {
-				login = profile.Login
-			}
-			log.Printf("%s - %s [%s] \"%s %s %s\" %d \"%s\"\n",
-				r.RemoteAddr,
-				login,
-				time.Now().Format("02/Jan/2006:15:04:05 -0700"),
-				r.Method,
-				r.URL,
-				r.Proto,
-				ww.statusCode,
-				r.UserAgent(),
-			)
-		}()
-
-		// RemoteAddr is in the form "ip:port"
-		// Drop the random port and just use the IP address for identification
-		ipv4, _, err := net.SplitHostPort(r.RemoteAddr)
+		remoteAddr, err := netip.ParseAddrPort(net.JoinHostPort(remoteHost, remotePort))
 		if err != nil {
-			ww.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		// Get user profile from cache if available
-		profile, err = cache.get(r.Context(), ipv4)
+		profile, err = cache.get(r.Context(), remoteHost)
 		// Fallback to tailscale if cache miss
 		if err != nil {
 			// Fetch user info from tailscale
-			info, err := tsCli.WhoIs(r.Context(), r.RemoteAddr)
+			info, err := tsCli.WhoIs(r.Context(), remoteAddr.String())
 			if err != nil {
-				ww.WriteHeader(http.StatusUnauthorized)
+				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
 			// Tagged nodes don't identify a user.
 			if info.Node.IsTagged() {
-				ww.WriteHeader(http.StatusForbidden)
+				w.WriteHeader(http.StatusForbidden)
 				return
 			}
 
@@ -210,53 +158,22 @@ func (p *Proxy) Run() error {
 				Login:  info.UserProfile.LoginName,
 				Name:   info.UserProfile.DisplayName,
 			}
-			_ = cache.set(r.Context(), ipv4, profile, p.CacheExpiry)
+			_ = cache.set(r.Context(), remoteHost, profile, p.CacheExpiry)
 		}
 
 		// Set headers
-		h := r.Header
+		h := w.Header()
 		h.Set(HeaderTailscaleUserAvatar, profile.Avatar)
 		h.Set(HeaderTailscaleUserLogin, profile.Login)
 		h.Set(HeaderTailscaleUserName, profile.Name)
-
-		// Proxy to upstream using wrapped writer
-		proxy.ServeHTTP(ww, r)
 	})
 
 	g, ctx := errgroup.WithContext(context.Background())
 	var httpHandler http.Handler = mux
 
-	// Start the HTTPS server if TLS cert and key are provided
-	if p.TLSCertFile != "" && p.TLSKeyFile != "" {
-		// When TLS cert and key are provided, simply redirect HTTP to HTTPS
-		httpHandler = redirectToHttps()
-		ln, err := ts.Listen("tcp", ":443")
-		if err != nil {
-			return fmt.Errorf("failed to listen on port 443: %v", err)
-		}
-		svr := &http.Server{Handler: mux}
-		g.Go(func() error {
-			if err := svr.ServeTLS(ln, p.TLSCertFile, p.TLSKeyFile); err != nil {
-				return fmt.Errorf("failed to serve TLS: %v", err)
-			}
-			return nil
-		})
-		g.Go(func() error {
-			if err := gracefulShutdown(ctx, svr); err != nil {
-				return fmt.Errorf("failed to shutdown HTTPS server: %v", err)
-			}
-			return nil
-		})
-	}
-
-	// Start the HTTP server
-	ln, err := ts.Listen("tcp", ":80")
-	if err != nil {
-		return fmt.Errorf("failed to listen on port 80: %v", err)
-	}
 	svr := http.Server{Handler: httpHandler}
 	g.Go(func() error {
-		if err := http.Serve(ln, httpHandler); err != nil {
+		if err := svr.ListenAndServe(); err != nil {
 			return fmt.Errorf("failed to serve HTTP: %v", err)
 		}
 		return nil

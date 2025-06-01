@@ -1,43 +1,30 @@
 package main
 
 import (
-	"net/url"
 	"time"
 
-	"github.com/bxnlabs/ts-auth-proxy/proxy"
+	"github.com/bxnlabs/ts-auth-proxy/server"
 	"github.com/spf13/cobra"
 	"tailscale.com/ipn"
 )
 
 func main() {
-	p := proxy.Proxy{}
+	s := server.Server{}
 
 	rootCmd := &cobra.Command{
-		Use:   "ts-auth-proxy [flags] <upstream>",
-		Short: "A lightweight authentication server for Tailscale.",
+		Use:   "ts-auth-proxy [flags]",
+		Short: "A lightweight Tailscale authentication server.",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.PrintErrln("Error: exactly one upstream URL required")
-				return
-			}
-			upstream, err := url.Parse(args[0])
-			if err != nil {
-				cmd.PrintErrln("Error: could not parse upstream URL:", err)
-				return
-			}
-			p.Upstream = upstream
-			if err := p.Run(); err != nil {
+			if err := s.Run(); err != nil {
 				cmd.PrintErrln("Error:", err)
 			}
 		},
 	}
-	rootCmd.Flags().Int64VarP(&p.CacheSize, "cache-size", "s", 1000, "Maximum number of entries in the cache")
-	rootCmd.Flags().DurationVarP(&p.CacheExpiry, "cache-expiry", "e", 10*time.Minute, "Time after which cache entries expire")
-	rootCmd.Flags().StringVarP(&p.ControlURL, "control-url", "c", ipn.DefaultControlURL, "URL for Tailscale control server")
-	rootCmd.Flags().StringVarP(&p.Hostname, "hostname", "H", "auth-server", "Hostname for proxy on Tailnet")
-	rootCmd.Flags().StringVarP(&p.StateDir, "state-dir", "d", "/var/run/ts-auth-proxy", "Directory to store state in")
-	rootCmd.Flags().StringVar(&p.TLSCertFile, "tls-cert", "", "Path to TLS certificate file")
-	rootCmd.Flags().StringVar(&p.TLSKeyFile, "tls-key", "", "Path to TLS key file")
+	rootCmd.Flags().Int64VarP(&s.CacheSize, "cache-size", "s", 1000, "Maximum number of entries in the cache")
+	rootCmd.Flags().DurationVarP(&s.CacheExpiry, "cache-expiry", "e", 10*time.Minute, "Time after which cache entries expire")
+	rootCmd.Flags().StringVarP(&s.ControlURL, "control-url", "c", ipn.DefaultControlURL, "URL for Tailscale control server")
+	rootCmd.Flags().StringVarP(&s.Hostname, "hostname", "H", "auth-server", "Hostname for proxy on Tailnet")
+	rootCmd.Flags().StringVarP(&s.StateDir, "state-dir", "d", "/var/run/ts-auth-proxy", "Directory to store state in")
 
 	_ = rootCmd.Execute()
 }

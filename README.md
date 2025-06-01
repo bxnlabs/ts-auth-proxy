@@ -1,2 +1,2 @@
 # ts-auth-proxy
-A lightweight authentication proxy for Tailscale
+A lightweight Tailscale authentication server.
