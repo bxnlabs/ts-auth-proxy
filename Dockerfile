@@ -9,7 +9,7 @@ WORKDIR /build
 
 COPY go.mod go.sum ./
 RUN go mod download
-COPY proxy ./proxy
+COPY server ./server
 COPY main.go ./
 RUN go build -ldflags="-w -s" -o dist/ts-auth-proxy main.go
 
