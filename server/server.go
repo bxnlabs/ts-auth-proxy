@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dgraph-io/ristretto/v2"
@@ -78,10 +79,17 @@ type Server struct {
 	ControlURL  string
 	Hostname    string
 	StateDir    string
+	TrustedCIDR string
 	Upstream    *url.URL
 }
 
 func (p *Server) Run() error {
+	// Parse the trusted CIDR ranges
+	var trustedCIDRs []netip.Prefix
+	for _, cidr := range strings.Split(p.TrustedCIDR, ",") {
+		trustedCIDRs = append(trustedCIDRs, netip.MustParsePrefix(cidr))
+	}
+
 	// Create the state directory if it doesn't exist
 	if err := os.MkdirAll(p.StateDir, 0755); err != nil {
 		return fmt.Errorf("failed to create state directory: %v", err)
@@ -119,9 +127,6 @@ func (p *Server) Run() error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var profile *userProfile
-		var err error
-
 		// Parse remote address from headers
 		remoteHost := r.Header.Get(HeaderTailscaleRemoteAddr)
 		remotePort := r.Header.Get(HeaderTailscaleRemotePort)
@@ -135,7 +140,16 @@ func (p *Server) Run() error {
 			return
 		}
 
+		// If the remote address is within the trusted CIDR range, allow access
+		for _, cidr := range trustedCIDRs {
+			if cidr.Contains(remoteAddr.Addr()) {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}
+
 		// Get user profile from cache if available
+		var profile *userProfile
 		profile, err = cache.get(r.Context(), remoteHost)
 		// Fallback to tailscale if cache miss
 		if err != nil {

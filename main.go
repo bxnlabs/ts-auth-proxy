@@ -25,6 +25,7 @@ func main() {
 	rootCmd.Flags().StringVarP(&s.ControlURL, "control-url", "c", ipn.DefaultControlURL, "URL for Tailscale control server")
 	rootCmd.Flags().StringVarP(&s.Hostname, "hostname", "H", "auth-server", "Hostname for proxy on Tailnet")
 	rootCmd.Flags().StringVarP(&s.StateDir, "state-dir", "d", "/var/run/ts-auth-proxy", "Directory to store state in")
+	rootCmd.Flags().StringVarP(&s.TrustedCIDR, "trusted-cidr", "t", "10.42.0.0/16", "Comma-separated string of trusted CIDR ranges")
 
 	_ = rootCmd.Execute()
 }
