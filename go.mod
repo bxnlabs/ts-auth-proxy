@@ -2,7 +2,7 @@ module github.com/bxnlabs/ts-auth-proxy
 
 go 1.24.4
 
-toolchain go1.25.0
+toolchain go1.25.1
 
 require (
 	github.com/dgraph-io/ristretto/v2 v2.3.0
