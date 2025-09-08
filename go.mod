@@ -7,7 +7,7 @@ toolchain go1.25.1
 require (
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/spf13/cobra v1.10.1
-	golang.org/x/sync v0.16.0
+	golang.org/x/sync v0.17.0
 	tailscale.com v1.86.5
 )
 
