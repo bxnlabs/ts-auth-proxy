@@ -6,7 +6,7 @@ toolchain go1.25.1
 
 require (
 	github.com/dgraph-io/ristretto/v2 v2.3.0
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.1
 	golang.org/x/sync v0.16.0
 	tailscale.com v1.86.5
 )
@@ -61,7 +61,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/prometheus-community/pro-bing v0.6.0 // indirect
 	github.com/safchain/ethtool v0.5.9 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tailscale/certstore v0.1.1-0.20231202035212-d3fa0460f47e // indirect
 	github.com/tailscale/go-winio v0.0.0-20231025203758-c4f33415bf55 // indirect
 	github.com/tailscale/goupnp v1.0.1-0.20210804030727-66b27ba4e403 // indirect
