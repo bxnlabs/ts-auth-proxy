@@ -1,14 +1,12 @@
 module github.com/bxnlabs/ts-auth-proxy
 
-go 1.24.4
-
-toolchain go1.25.1
+go 1.25.1
 
 require (
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/spf13/cobra v1.10.1
 	golang.org/x/sync v0.17.0
-	tailscale.com v1.86.5
+	tailscale.com v1.88.1
 )
 
 require (
@@ -37,7 +35,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/gaissmai/bart v0.18.0 // indirect
-	github.com/go-json-experiment/json v0.0.0-20250223041408-d3c622f1b874 // indirect
+	github.com/go-json-experiment/json v0.0.0-20250813024750-ebf49471dced // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.1-0.20241109141217-c266b19b28e9 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
