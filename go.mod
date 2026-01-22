@@ -3,7 +3,7 @@ module github.com/bxnlabs/ts-auth-proxy
 go 1.25.5
 
 require (
-	github.com/dgraph-io/ristretto/v2 v2.3.0
+	github.com/dgraph-io/ristretto/v2 v2.4.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/sync v0.19.0
 	tailscale.com v1.94.0
