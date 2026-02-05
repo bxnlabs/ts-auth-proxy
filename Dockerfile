@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} golang:1.25-bookworm@sha256:f4490d7b261d73af4543c46ac6597d7d101b6e1755bcdd8c5159fda7046b6b3e AS builder
+FROM --platform=${BUILDPLATFORM} golang:1.25-bookworm@sha256:38342f3e7a504bf1efad858c18e771f84b66dc0b363add7a57c9a0bbb6cf7b12 AS builder
 
 ARG TARGETARCH
 ENV CGO_ENABLED=0
