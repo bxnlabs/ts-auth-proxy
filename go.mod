@@ -5,7 +5,7 @@ go 1.27.1
 require (
 	github.com/dgraph-io/ristretto/v2 v2.4.2
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 	tailscale.com v1.104.1
 )
 
